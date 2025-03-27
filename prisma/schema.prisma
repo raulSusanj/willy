@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  firstName     String       @map(name: "first_name")
+  lastName      String       @map(name: "last_name")
+  email         String
+  phone         String
+  vacationDays  Int          @default(0) @map(name: "vacation_days")
+  sickLeaveDays Int          @default(0) @map(name: "sick_leave_days")
+  otherPtoDays  Int          @default(0) @map(name: "other_pto_days")
+  createdAt     DateTime     @default(now()) @map(name: "created_at")
+  updatedAt     DateTime     @updatedAt @map(name: "updated_at")
+  roleId        String       @map(name: "role_id")
+  role          Role         @relation(fields: [roleId], references: [id])
+  teamId        String       @map(name: "team_id")
+  team          Team         @relation(fields: [teamId], references: [id])
+  PtoRequest    PtoRequest[]
+
+  @@map(name: "users")
+}
+
+model PtoRequest {
+  id            String      @id @default(cuid())
+  start         DateTime
+  end           DateTime
+  duration      Int
+  description   String?
+  createdAt     DateTime    @default(now()) @map(name: "created_at")
+  updatedAt     DateTime    @updatedAt @map(name: "updated_at")
+  userId        String      @map(name: "user_id")
+  user          User        @relation(fields: [userId], references: [id])
+  requestTypeId String      @map(name: "request_type_id")
+  requestType   RequestType @relation(fields: [requestTypeId], references: [id])
+  statusId      String      @map(name: "status_id")
+  status        Status      @relation(fields: [statusId], references: [id])
+
+  @@map(name: "pto_requests")
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  User      User[]
+
+  @@map(name: "roles")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  User      User[]
+
+  @@map(name: "teams")
+}
+
+model RequestType {
+  id         String       @id @default(cuid())
+  name       String
+  createdAt  DateTime     @default(now()) @map(name: "created_at")
+  updatedAt  DateTime     @updatedAt @map(name: "updated_at")
+  PtoRequest PtoRequest[]
+
+  @@map(name: "request_types")
+}
+
+model Status {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime     @default(now()) @map(name: "created_at")
+  updatedAt   DateTime     @updatedAt @map(name: "updated_at")
+  PtoRequest  PtoRequest[]
+
+  @@map(name: "statuses")
+}
