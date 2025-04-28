@@ -8,6 +8,35 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  oauth_token_secret String?
+  oauth_token        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id            String       @id @default(cuid())
   firstName     String       @map(name: "first_name")
@@ -18,14 +47,25 @@ model User {
   sickLeaveDays Int          @default(0) @map(name: "sick_leave_days")
   otherPtoDays  Int          @default(0) @map(name: "other_pto_days")
   createdAt     DateTime     @default(now()) @map(name: "created_at")
-  updatedAt     DateTime     @updatedAt @map(name: "updated_at")
+  updatedAt     DateTime?    @updatedAt @map(name: "updated_at")
   roleId        String       @map(name: "role_id")
   role          Role         @relation(fields: [roleId], references: [id])
   teamId        String       @map(name: "team_id")
   team          Team         @relation(fields: [teamId], references: [id])
   PtoRequest    PtoRequest[]
+  accounts      Account[]
+  sessions      Session[]
 
   @@map(name: "users")
+}
+
+model VerificationToken {
+  id         Int      @id @default(autoincrement())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model PtoRequest {
@@ -35,7 +75,7 @@ model PtoRequest {
   duration      Int
   description   String?
   createdAt     DateTime    @default(now()) @map(name: "created_at")
-  updatedAt     DateTime    @updatedAt @map(name: "updated_at")
+  updatedAt     DateTime?   @updatedAt @map(name: "updated_at")
   userId        String      @map(name: "user_id")
   user          User        @relation(fields: [userId], references: [id])
   requestTypeId String      @map(name: "request_type_id")
@@ -47,20 +87,20 @@ model PtoRequest {
 }
 
 model Role {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now()) @map(name: "created_at")
-  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  createdAt DateTime  @default(now()) @map(name: "created_at")
+  updatedAt DateTime? @updatedAt @map(name: "updated_at")
   User      User[]
 
   @@map(name: "roles")
 }
 
 model Team {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now()) @map(name: "created_at")
-  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  createdAt DateTime  @default(now()) @map(name: "created_at")
+  updatedAt DateTime? @updatedAt @map(name: "updated_at")
   User      User[]
 
   @@map(name: "teams")
@@ -70,7 +110,7 @@ model RequestType {
   id         String       @id @default(cuid())
   name       String
   createdAt  DateTime     @default(now()) @map(name: "created_at")
-  updatedAt  DateTime     @updatedAt @map(name: "updated_at")
+  updatedAt  DateTime?    @updatedAt @map(name: "updated_at")
   PtoRequest PtoRequest[]
 
   @@map(name: "request_types")
@@ -81,7 +121,7 @@ model Status {
   name        String
   description String?
   createdAt   DateTime     @default(now()) @map(name: "created_at")
-  updatedAt   DateTime     @updatedAt @map(name: "updated_at")
+  updatedAt   DateTime?    @updatedAt @map(name: "updated_at")
   PtoRequest  PtoRequest[]
 
   @@map(name: "statuses")
