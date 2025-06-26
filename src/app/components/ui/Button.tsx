@@ -10,7 +10,7 @@ const primaryStyle: string = "bg-blue-400 hover:bg-blue-600 text-white";
 const secondaryStyle: string = "border-1 border-blue-600 hover:bg-blue-200 text-blue-600";
 const linkStyle: string = "hover:bg-blue-200 text-blue-600";
 
-export default function Button({ label, themeType = "primary", ...props }: ButtonPropsI): ReactElement {
+export default function Button({ label, themeType = "primary", className, ...props }: ButtonPropsI): ReactElement {
   // Function to choose button style
   const determinateThemeType = (): string => {
     switch (themeType) {
@@ -24,7 +24,7 @@ export default function Button({ label, themeType = "primary", ...props }: Butto
   };
 
   return (
-    <button {...props} className={`${baseStyle} ${determinateThemeType()}`}>
+    <button {...props} className={`${baseStyle} ${determinateThemeType()} ${className || ""}`}>
       {label}
     </button>
   );

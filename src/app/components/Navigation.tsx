@@ -13,7 +13,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-6 ">
             <Link href="/">Početna</Link>
-            <Link href="/employees">Djelatnici</Link>
+            <Link href="/employees">Administracija</Link>
             <Link href="/wiki">Wiki</Link>
           </div>
 

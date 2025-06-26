@@ -3,7 +3,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "../prisma-client";
 import type { Profile, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
-import { Account } from "@prisma/client";
+import { Account, User } from "@prisma/client";
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
@@ -35,31 +35,59 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    session({ session, token }: { session: Session; token: JWT }) {
-      if (session.user) {
-        session.user.id = token.sub!;
+    async jwt({ token, user }: { token: JWT; user: User }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.firstName + " " + user.lastName; // Assuming user has firstName and lastName fields
       }
+      return token;
+    },
+    async session({ session, token }: { session: Session; token: JWT }) {
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.id,
+          email: token.email,
+          name: token.name,
+        };
+      }
+
       return session;
     },
-    async signIn(data: any, account: Account, profile: Profile) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
+    async signIn({ user, account, profile }: { user: User; account: Account | null; profile: Profile }) {
       console.log("THIS IS THE USER");
-      const { user } = data;
+      console.log({ user });
+      console.log({ account });
+      console.log({ profile });
 
-      if (!user.email) {
-        return false;
-      }
+      // If the user doesn't have an email, we can't proceed
+      if (!user.email) return false;
 
+      //Find user in database
       const userData = await prisma.user.findFirst({
         where: {
           email: user.email,
         },
         include: { accounts: true },
       });
+
+      //User doesn't exist in database, needs to be added manually
       if (!userData) {
+        console.log("User not found in database, creating new user");
         return false;
       }
-      console.log({ profile });
+
+      //User exists in database, check if account is already linked, if not create a new account
       if (account && !userData.accounts.some((a) => a.provider === "google")) {
+        console.log("Creating new account for user");
         const result = await prisma.account.create({
           data: {
             userId: userData.id,
@@ -68,22 +96,26 @@ export const authConfig = {
             providerAccountId: `${profile.sub}`,
           },
         });
-        // console.log({ result });
+        console.log({ result });
         if (!result) {
+          console.error("Failed to create account for user");
           return false;
         }
         return true;
       }
+      return true;
     },
   },
+
   cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: `next-auth.session-token`, // Changed from __Secure prefix
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: false, // Disable in development, enable in production
+        domain: process.env.NODE_ENV === "development" ? "localhost" : ".yourdomain.com",
       },
     },
   },
@@ -94,5 +126,17 @@ export const authConfig = {
   },
   pages: {
     signIn: "/signin",
+  },
+  debug: process.env.NODE_ENV === "development",
+  logger: {
+    error(code: unknown, metadata: unknown) {
+      console.error("🛑 NEXT-AUTH ERROR:", code, metadata);
+    },
+    warn(code: unknown) {
+      console.warn("⚠️ NEXT-AUTH WARNING:", code);
+    },
+    debug(code: unknown, metadata: unknown) {
+      console.log("🐛 NEXT-AUTH DEBUG:", code, metadata);
+    },
   },
 };

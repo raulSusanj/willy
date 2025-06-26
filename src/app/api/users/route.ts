@@ -3,11 +3,11 @@ import { prisma } from "prisma-client";
 
 export async function GET() {
   try {
-    const roles = await prisma.role.findMany();
+    const users = await prisma.user.findMany();
 
-    return NextResponse.json(roles);
+    return NextResponse.json(users);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "Failed to fetch roles" }, { status: 500 });
+    return NextResponse.json({ message: "Failed to fetch users" }, { status: 500 });
   }
 }
