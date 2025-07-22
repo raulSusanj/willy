@@ -1,4 +1,4 @@
-import SignInButton from "@components/SignInButton";
+import SignInButton from "@components/ui/SignInButton";
 import { getProviders } from "next-auth/react";
 
 export default async function SignIn() {

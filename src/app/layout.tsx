@@ -28,7 +28,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={poppins.className}>
         <Provider session={session}>
-          <Navbar />
+          <Navbar userName={session?.user?.name} />
           <div className="bg-white">{children}</div>
           <Footer />
         </Provider>

@@ -63,11 +63,6 @@ export const authConfig = {
       return baseUrl;
     },
     async signIn({ user, account, profile }: { user: User; account: Account | null; profile: Profile }) {
-      console.log("THIS IS THE USER");
-      console.log({ user });
-      console.log({ account });
-      console.log({ profile });
-
       // If the user doesn't have an email, we can't proceed
       if (!user.email) return false;
 
@@ -96,7 +91,6 @@ export const authConfig = {
             providerAccountId: `${profile.sub}`,
           },
         });
-        console.log({ result });
         if (!result) {
           console.error("Failed to create account for user");
           return false;

@@ -3,24 +3,18 @@
 import useSWR from "swr";
 import fetcher from "../fetcher";
 import { Role, Team, User } from "@prisma/client";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
-import { FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import Button from "@components/ui/Button";
-import { deleteTeam } from "./actions";
-
-type TabContentListItemProps = {
-  id: string;
-  name: string;
-};
+import { deleteRole, deleteTeam, deleteUser } from "./actions";
+import { TabContentListItem } from "./components/TabContentListItem";
+import { useRouter } from "next/navigation";
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState("employees");
+  const router = useRouter();
   const { data: roles, error: rolesError, isLoading: rolesLoading } = useSWR<Role[]>("/api/roles", fetcher);
   const { data: teams, error: teamsError, isLoading: teamsLoading } = useSWR<Team[]>("/api/teams", fetcher);
   const { data: employees, error: employeesError, isLoading: employeesLoading } = useSWR<User[]>("/api/users", fetcher);
-  const session = useSession();
-  console.log("session", session);
 
   if (rolesError || teamsError || employeesError) <p>{rolesError || teamsError || employeesError}</p>;
   if (rolesLoading || teamsLoading || employeesLoading) <p>Loading...</p>;
@@ -31,31 +25,55 @@ export default function Employees() {
     { name: "teams", label: "Timovi" },
   ];
 
-  const TabContentListItem: React.FC<TabContentListItemProps> = ({ id, name }) => {
-    return (
-      <li key={id} className="flex flex-row justify-between py-3 px-2 hover:bg-gray-50">
-        <p className="text-gray-800">{name}</p>
-        <div>
-          <FaEdit className="inline-block text-gray-500  mr-2 cursor-pointer mx-1 hover:text-blue-500" />
-          <FaRegTrashAlt
-            className="inline-block text-gray-500 cursor-pointer mx-1 hover:text-red-500"
-            onClick={() => deleteTeam(id)}
-          />
-        </div>
-      </li>
-    );
-  };
+  const creationButtonLabel =
+    activeTab === "employees" ? "Dodaj zaposlenika" : activeTab === "roles" ? "Dodaj ulogu" : "Dodaj tim";
 
   function determineTabContent() {
     switch (activeTab) {
       case "employees":
-        return employees?.map((user) => (
-          <TabContentListItem key={user.id} id={user.id} name={`${user.firstName} ${user.lastName}`} />
-        ));
+        return (
+          <div>
+            {employees?.map((user) => (
+              <TabContentListItem
+                key={user.id}
+                id={user.id}
+                name={`${user.firstName} ${user.lastName}`}
+                onDelete={(id) => {
+                  deleteUser(String(id));
+                }}
+                modalTitle="Potvrda brisanja zaposlenika"
+                modalText="Jeste li sigurni da želite obrisati ovog zaposlenika?"
+              />
+            ))}
+          </div>
+        );
+
       case "roles":
-        return roles?.map((role) => <TabContentListItem key={role.id} id={role.id} name={role.name} />);
+        return roles?.map((role) => (
+          <TabContentListItem
+            key={role.id}
+            id={role.id}
+            name={role.name}
+            onDelete={(id) => {
+              deleteRole(String(id));
+            }}
+            modalTitle="Potvrda brisanja uloge"
+            modalText="Jeste li sigurni da želite obrisati ovu ulogu?"
+          />
+        ));
       case "teams":
-        return teams?.map((team) => <TabContentListItem key={team.id} id={team.id} name={team.name} />);
+        return teams?.map((team) => (
+          <TabContentListItem
+            key={team.id}
+            id={team.id}
+            name={team.name}
+            onDelete={(id) => {
+              deleteTeam(String(id));
+            }}
+            modalTitle="Potvrda brisanja tima"
+            modalText="Jeste li sigurni da želite obrisati ovaj tim?"
+          />
+        ));
       default:
         return null;
     }
@@ -90,8 +108,8 @@ export default function Employees() {
         <div className=" rounded-lg shadow-sm overflow-hidden">
           <div className="text-end">
             <Button
-              onClick={() => alert("Za sada ne radi")}
-              label="Kreiraj zaposlenika"
+              onClick={() => router.push(`/administration/new-record?entity=${activeTab}`)}
+              label={creationButtonLabel}
               themeType="secondary"
               className="m-3 "
             />
